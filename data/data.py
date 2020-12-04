@@ -6,8 +6,8 @@ import random
 
 import logging
 
-import torch as th
 import numpy as np
+import torch
 
 from torchtext import data
 import io
@@ -470,8 +470,9 @@ class BPTTIterator(Iterator):
             [text], device=self.device)
         data = data.view(self.batch_size, -1).t()
         eos_token = TEXT.vocab["<eos>"]
-        data = th.cat([
-            th.empty(
+        # TODO: SWITCH TO NUMPY
+        data = torch.cat([
+            torch.empty(
                 self.batch_size,
                 device=data.device,
                 dtype=data.dtype,

@@ -15,6 +15,8 @@ import io
 from torchtext.data.utils import RandomShuffler
 from torchtext.data.dataset import Dataset
 
+from .field import Field
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +66,7 @@ def process_articles(path, encoding, text_field, newline_eos, fields):
         examples.append(example)
     # first example is empty, actually want a do-while loop
     return examples[1:]
+
 
 class LanguageModelingDataset(data.Dataset):
     """Defines a dataset for language modeling."""
