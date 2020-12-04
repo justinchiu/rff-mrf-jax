@@ -5,8 +5,8 @@ Repo for applying the random Fourier feature trick to some MRFs.
 Currently...
 * Jax
 * Torchtext
+
 `pip install -r requirements.txt`
 
 ## RFF-HMMs
-TODO:
-`python hmm.py`
+TODO: `python hmm.py`
