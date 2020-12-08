@@ -7,6 +7,7 @@ import random
 import logging
 
 import numpy as np
+import jax.numpy as jnp
 import torch
 
 from torchtext import data
@@ -67,7 +68,7 @@ class Batch(object):
 
     def __str__(self):
         if not self.__dict__:
-            return 'Empty {} instance'.format(th.typename(self))
+            return 'Empty {} instance'.format(type(self))
 
         fields_to_index = filter(lambda field: field is not None, self.fields)
         var_strs = '\n'.join(['\t[.' + name + ']' + ":" + _short_str(getattr(self, name))
@@ -77,7 +78,7 @@ class Batch(object):
                     if hasattr(self.dataset, 'name')
                     and isinstance(self.dataset.name, str) else '')
 
-        strt = '[{} of size {}{}]\n{}'.format(th.typename(self),
+        strt = '[{} of size {}{}]\n{}'.format(type(self),
                                               self.batch_size, data_str, var_strs)
         return '\n' + strt
 
@@ -96,7 +97,7 @@ class Batch(object):
         yield self._get_field_values(self.input_fields)
         yield self._get_field_values(self.target_fields)
 
-
+"""
 def _short_str(tensor):
     # unwrap variable to tensor
     if not th.is_tensor(tensor):
@@ -115,6 +116,29 @@ def _short_str(tensor):
     device_str = '' if not tensor.is_cuda else \
         ' (GPU {})'.format(tensor.get_device())
     strt = '[{} of size {}{}]'.format(th.typename(tensor),
+                                      size_str, device_str)
+    return strt
+"""
+
+def _short_str(tensor):
+    # unwrap variable to tensor
+    if not isinstance(tensor, (np.ndarray, jnp.ndarray)):
+        import pdb; pdb.set_trace()
+        # (1) unpack variable
+        if hasattr(tensor, 'data'):
+            tensor = getattr(tensor, 'data')
+        # (2) handle include_lengths
+        elif isinstance(tensor, tuple):
+            return str(tuple(_short_str(t) for t in tensor))
+        # (3) fallback to default str
+        else:
+            return str(tensor)
+
+    # copied from torch _tensor_str
+    size_str = 'x'.join(str(size) for size in tensor.shape)
+    device_str = '' if not isinstance(tensor, jnp.DeviceArray) else \
+        ' (GPU {})'.format(tensor.device_buffer.device())
+    strt = '[{} of size {}{}]'.format(type(tensor),
                                       size_str, device_str)
     return strt
 
@@ -169,6 +193,7 @@ class Iterator(object):
         else:
             self.sort_key = sort_key
 
+        # TODO: jax.devices()? use none for now.
         if isinstance(device, int):
             logger.warning("The `device` argument should be set by using `torch.device`"
                            + " or passing a string as an argument. This behavior will be"
@@ -321,6 +346,7 @@ class BPTTIterator(Iterator):
                                               * self.batch_size - len(text)))
         data = TEXT.numericalize(
             [text], device=self.device)
+        import pdb; pdb.set_trace()
         data = data.view(self.batch_size, -1).t().contiguous()
         dataset = Dataset(examples=self.dataset.examples, fields=[
             ('text', TEXT), ('target', TEXT)])

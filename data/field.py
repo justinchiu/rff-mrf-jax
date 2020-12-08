@@ -5,11 +5,13 @@ from tqdm import tqdm
 import warnings
 
 import numpy as np
+import jax.numpy as jnp
 #import torch
 
-from torchtext.dataset import Dataset
-from torchtext.pipeline import Pipeline
-from torchtext.utils import get_tokenizer, dtype_to_attr, is_tokenizer_serializable
+from torchtext.data.field import RawField
+from torchtext.data.dataset import Dataset
+from torchtext.data.pipeline import Pipeline
+from torchtext.data.utils import get_tokenizer, dtype_to_attr, is_tokenizer_serializable
 from torchtext.vocab import Vocab, SubwordVocab
 
 class Field(RawField):
@@ -279,7 +281,7 @@ class Field(RawField):
         if isinstance(arr, tuple):
             arr, lengths = arr
             #lengths = torch.tensor(lengths, dtype=self.dtype, device=device)
-            lengths = np.array(lengths, dtype=self.dtype)
+            lengths = jnp.array(lengths, dtype=self.dtype)
 
         if self.use_vocab:
             if self.sequential:
@@ -307,12 +309,15 @@ class Field(RawField):
                 arr = self.postprocessing(arr, None)
 
         #var = torch.tensor(arr, dtype=self.dtype, device=device)
-        var = np.array(arr, dtype=self.dtype)
+        var = jnp.array(arr, dtype=self.dtype)
 
         if self.sequential and not self.batch_first:
-            var.t_()
-        if self.sequential:
-            var = var.contiguous()
+            var = var.T
+            #import pdb; pdb.set_trace()
+            #var.t_()
+        #if self.sequential:
+            #import pdb; pdb.set_trace()
+            #var = var.contiguous()
 
         if self.include_lengths:
             return var, lengths
@@ -445,7 +450,7 @@ class NestedField(Field):
     """
 
     def __init__(self, nesting_field, use_vocab=True, init_token=None, eos_token=None,
-                 fix_length=None, dtype=torch.long, preprocessing=None,
+                 fix_length=None, dtype=np.long, preprocessing=None,
                  postprocessing=None, tokenize=None, tokenizer_language='en',
                  include_lengths=False, pad_token='<pad>',
                  pad_first=False, truncate_first=False):
