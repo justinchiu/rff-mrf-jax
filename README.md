@@ -5,6 +5,7 @@ Repo for applying the random Fourier feature trick to some MRFs.
 Currently...
 * Jax
 * Torchtext
+* Flax
 
 `pip install -r requirements.txt`
 

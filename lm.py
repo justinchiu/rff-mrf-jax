@@ -6,6 +6,7 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import flax.linen as nn
+import flax.optim as optim
 
 from data.lm import PennTreebank, WikiText2
 from data.data import BucketIterator, BPTTIterator
@@ -64,7 +65,14 @@ if args.no_shuffle_train:
 
 
 # begin hacking
- 
+# batchify module
+FfLm = nn.vmap(
+    FfLm,
+    in_axes = 0,
+    out_axes = 0,
+    variable_axes = {"params": None},
+    split_rngs = {"params": False, "dropout": True},
+) 
 model = FfLm(
     V = len(V),
     emb_dim = args.emb_dim,
@@ -73,19 +81,38 @@ model = FfLm(
     num_layers = args.num_layers,
 )
 
+optimizer = optim.Adam(
+    learning_rate = args.lr,
+)
+
 first_batch = next(iter(train_iter))
 print(first_batch)
-text, lengths = first_batch.text
-state = model.init_state(len(first_batch.text[0]))
+key = random.PRNGKey(0)
 
-key1, key2, key3 = random.split(random.PRNGKey(0), 3)
+def process_batch(batch, key, model):
+    text, lengths = batch.text
+    N, T = text.shape
+    state = model.init_state(N)
 
-# maybe no dropout prng here, just at runtime when called with apply?
-variables = model.init({"params": key1, "dropout": key2}, text, state)
+    key, key1, key2, key3 = random.split(, 4)
 
-# oops, vmap inside modules?
-F = jax.vmap(model.apply, (None, 0, 0), 0)
-output = F(variables, text, state)
+    # raises error without dropout key
+    variables = model.init({"params": key1, "dropout": key2}, text, state)
 
+    output = model.apply(variables, text[:,:-1], state, rngs={"dropout": key3})
+
+    Nr = jnp.arange(N)
+    Tr = jnp.arange(T)
+
+    mask = Tr.tile((N, 1)) < lengths[:,None]
+    loss = output[
+        Nr[:,None,None],
+        Tr[None,:,None],
+        text[:,:,None],
+    ][:,:,0][mask].sum()
+    nwords = mask.sum()
+
+    return loss, nwords, key
+
+loss, nwords, key = process_batch(first_batch, key, model)
 import pdb; pdb.set_trace()
-

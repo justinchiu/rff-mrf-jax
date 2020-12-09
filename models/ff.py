@@ -10,7 +10,7 @@ from jax.scipy.special import logsumexp as lse
 
 import flax
 import flax.linen as nn
-from flax.nn import dropout # deprecated or not?
+
 
 class FfLm(nn.Module):
     #V: Any # torchtext.Vocab or int?
@@ -30,7 +30,8 @@ class FfLm(nn.Module):
         self.proj = self.param("proj", self.linear_init, (V, self.emb_dim))
         self.conv = nn.Conv(
             features = self.hidden_dim,
-            kernel_size = self.order,
+            kernel_size = self.order-1,
+            padding = ((0,0),),
         )
         self.conv_dropout = nn.Dropout(self.dropout)
         self.linears = [
