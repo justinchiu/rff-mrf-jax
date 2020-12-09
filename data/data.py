@@ -123,8 +123,8 @@ def _short_str(tensor):
 def _short_str(tensor):
     # unwrap variable to tensor
     if not isinstance(tensor, (np.ndarray, jnp.ndarray)):
-        import pdb; pdb.set_trace()
         # (1) unpack variable
+        # defunct, using numpy
         if hasattr(tensor, 'data'):
             tensor = getattr(tensor, 'data')
         # (2) handle include_lengths

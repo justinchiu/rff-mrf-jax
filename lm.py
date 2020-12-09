@@ -2,9 +2,16 @@
 
 import numpy as np
 
+import jax
+from jax import random
+import jax.numpy as jnp
+import flax.linen as nn
+
 from data.lm import PennTreebank, WikiText2
 from data.data import BucketIterator, BPTTIterator
 from data.field import Field
+
+from models.ff import FfLm
 
 from args import get_args
 
@@ -12,7 +19,7 @@ from args import get_args
 args = get_args()
 print(args)
 
-TEXT = Field(batch_first = True)
+TEXT = Field(batch_first = True, include_lengths = True)
 
 if args.dataset == "ptb":
     Dataset = PennTreebank
@@ -55,6 +62,28 @@ else:
 if args.no_shuffle_train:
     train_iter.shuffle = False
 
+
+# begin hacking
+ 
+model = FfLm(
+    V = len(V),
+    emb_dim = args.emb_dim,
+    hidden_dim = args.hidden_dim,
+    order = args.order,
+    num_layers = args.num_layers,
+)
+
 first_batch = next(iter(train_iter))
 print(first_batch)
+text, lengths = first_batch.text
+state = model.init_state(len(first_batch.text[0]))
+
+key1, key2, key3 = random.split(random.PRNGKey(0), 3)
+
+variables = model.init({"params": key1, "dropout": key2}, text, state)
+
+F = jax.vmap(model.apply, (None, 0, 0), 0)
+output = F(variables, text, state)
+
 import pdb; pdb.set_trace()
+
