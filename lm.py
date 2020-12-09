@@ -80,8 +80,10 @@ state = model.init_state(len(first_batch.text[0]))
 
 key1, key2, key3 = random.split(random.PRNGKey(0), 3)
 
+# maybe no dropout prng here, just at runtime when called with apply?
 variables = model.init({"params": key1, "dropout": key2}, text, state)
 
+# oops, vmap inside modules?
 F = jax.vmap(model.apply, (None, 0, 0), 0)
 output = F(variables, text, state)
 
