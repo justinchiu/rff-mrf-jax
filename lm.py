@@ -94,10 +94,11 @@ def process_batch(batch, key, model):
     N, T = text.shape
     state = model.init_state(N)
 
-    key, key1, key2, key3 = random.split(, 4)
+    key, key1, key2, key3 = random.split(key, 4)
 
     # raises error without dropout key
     variables = model.init({"params": key1, "dropout": key2}, text, state)
+    #variables = model.init({"params": key1}, text, state)
 
     output = model.apply(variables, text[:,:-1], state, rngs={"dropout": key3})
 
